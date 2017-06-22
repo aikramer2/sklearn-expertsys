@@ -30,7 +30,7 @@ t2 = time.time()
 # train classifier (allow more iterations for better accuracy)
 sclf = SVMBigDataRuleListClassifier(training_subset=0.1, subsetSVM_C=0.01, max_iter=10000, class1label="diabetes", verbose=False)
 sclf.fit(Xtrain, ytrain, feature_labels=feature_labels)
-print(SVMBigDataRuleListClassifier Accuracy:", bclf.score(Xtest, ytest), "Learned interpretable model:\n", sclf)
+print("SVMBigDataRuleListClassifier Accuracy:", bclf.score(Xtest, ytest), "Learned interpretable model:\n", sclf)
 t3 = time.time()
 
 print("Comparison\n=========")
