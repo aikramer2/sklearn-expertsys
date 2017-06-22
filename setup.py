@@ -1,7 +1,7 @@
 # Reference: http://python-packaging.readthedocs.io/en/latest/dependencies.html
 from setuptools import setup, find_packages
 
-setup(name='pysurrogates',
+setup(name='rulelists',
       version='0.0.1',
       description='Bayesian Rule Lists',
       packages=find_packages(),
