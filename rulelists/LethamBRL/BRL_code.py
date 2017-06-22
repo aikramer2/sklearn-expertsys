@@ -28,62 +28,62 @@
 
 ####README
 #
-#This code implements the Bayesian Rule Lists algorithm as described in the 
+#This code implements the Bayesian Rule Lists algorithm as described in the
 #paper. We include the Titanic dataset in the correct formatting to be used
 #by this code.
 #
-#This code requires the external frequent itemset mining package "PyFIM," 
+#This code requires the external frequent itemset mining package "PyFIM,"
 #available at http://www.borgelt.net/pyfim.html
 #
-#It is specific to binary classification with binary features (although could 
+#It is specific to binary classification with binary features (although could
 #easily be extended to multiclass).
 #
 # ##INPUT
 #
-#The main code to be run by the user is the function "topscript". In addition to 
-#the parameters described in the paper, in this function you must specify a 
+#The main code to be run by the user is the function "topscript". In addition to
+#the parameters described in the paper, in this function you must specify a
 #variable "fname" that will specify which data to load.
-#The following files must be present and must be formatted as described (see 
+#The following files must be present and must be formatted as described (see
 #titanic data included for an example):
 #
-# - fname_train.tab : This is the file containing the training X data, for which 
-#all features are binary. Each line is a data entry in which all of the features 
-#with value "1" are simply listed, with spaces delimiting different features. For 
-#example, in the Titanic dataset, "1st_class adult male" is a line in 
+# - fname_train.tab : This is the file containing the training X data, for which
+#all features are binary. Each line is a data entry in which all of the features
+#with value "1" are simply listed, with spaces delimiting different features. For
+#example, in the Titanic dataset, "1st_class adult male" is a line in
 #titanic.tab.
 #
-# - fname_train.Y : This file contains the training Y data (labels), and 
-#contains a line corresponding to each line in fname.tab. Each of the possible 
-#labels (two for binary classification) is listed (space delimited) and "1" is 
-#put for the label of that point, and 0 for others. For instance, a data entry 
-#with label "0" would have "1 0" in its line in fname.Y, and a data entry with 
+# - fname_train.Y : This file contains the training Y data (labels), and
+#contains a line corresponding to each line in fname.tab. Each of the possible
+#labels (two for binary classification) is listed (space delimited) and "1" is
+#put for the label of that point, and 0 for others. For instance, a data entry
+#with label "0" would have "1 0" in its line in fname.Y, and a data entry with
 #label "1" would have "0 1" in its line in fname.
 #
-# - fname_test.tab and fname_test.Y, formatted with the same formatting as the 
+# - fname_test.tab and fname_test.Y, formatted with the same formatting as the
 #training data.
 #
 # ##OUTPUT
 #
 #The highest level function, "topscript," returns:
 #
-# - permsdic - Contains the important information from the MCMC sampling. A 
-#dictionary whose keys are a string Pickle-dump of the antecedent list d, and 
-#whose values are a list [a,b] where a is (proportional to) the log posterior of 
+# - permsdic - Contains the important information from the MCMC sampling. A
+#dictionary whose keys are a string Pickle-dump of the antecedent list d, and
+#whose values are a list [a,b] where a is (proportional to) the log posterior of
 #d, and b is the number of times d is present in the MCMC samples.
-# - d_star - the BRL-point antecedent list. A list of indicies corresponding to 
+# - d_star - the BRL-point antecedent list. A list of indicies corresponding to
 #variable "itemsets."
-# - itemsets - A list of itemsets. itemsets[d_star[i]] is the antecedent in 
+# - itemsets - A list of itemsets. itemsets[d_star[i]] is the antecedent in
 #position i on the BRL-point list
-# - theta - A list of the expected value of the posterior consequent 
+# - theta - A list of the expected value of the posterior consequent
 #distribution for each entry in BRL-point.
-# - ci_theta - A list of tuples, each the 95% credible interval for the 
+# - ci_theta - A list of tuples, each the 95% credible interval for the
 #corresponding theta.
 # - preds_d_star - Predictions on the demo data made using d_star and theta.
-# - accur_d_star - The accuracy of the BRL-point predictions, with the decision 
+# - accur_d_star - The accuracy of the BRL-point predictions, with the decision
 #boundary at 0.5.
-# - preds_fullpost - Predictions on the demo data using the full posterior 
+# - preds_fullpost - Predictions on the demo data using the full posterior
 #(BRL-post)
-# - accur_fullpost - The accuracy of the BRL-post predictions, decision boundary 
+# - accur_fullpost - The accuracy of the BRL-post predictions, decision boundary
 #at 0.5.
 #
 
@@ -100,62 +100,62 @@ from fim import fpgrowth #this is PyFIM, available from http://www.borgelt.net/p
 try:
     from matplotlib import pyplot as plt
 except:
-    pass 
+    pass
 
 def topscript():
     fname = 'titanic'
-    
+
     #Prior hyperparameters
     lbda = 3. #prior hyperparameter for expected list length (excluding null rule)
     eta = 1. #prior hyperparameter for expected list average width (excluding null rule)
     alpha = array([1.,1.]) #prior hyperparameter for multinomial pseudocounts
-    
+
     #rule mining parameters
     maxlhs = 2 #maximum cardinality of an itemset
     minsupport = 10 #minimum support (%) of an itemset
-    
+
     #mcmc parameters
     numiters = 5000#50000 # Uncomment plot_chains in run_bdl_multichain to visually check mixing and convergence
     thinning = 1 #The thinning rate
     burnin = numiters//2 #the number of samples to drop as burn-in in-simulation
     nchains = 3 #number of MCMC chains. These are simulated in serial, and then merged after checking for convergence.
-    
+
     #End parameters
-    
+
     #Now we load data and do MCMC
     permsdic = defaultdict(default_permsdic) #We will store here the MCMC results
     Xtrain,Ytrain,nruleslen,lhs_len,itemsets = get_freqitemsets(fname+'_train',minsupport,maxlhs) #Do frequent itemset mining from the training data
     Xtest,Ytest,Ylabels_test = get_testdata(fname+'_test',itemsets) #Load the demo data
-    print 'Data loaded!'
-    
+    print('Data loaded!')
+
     #Do MCMC
     res,Rhat = run_bdl_multichain_serial(numiters,thinning,alpha,lbda,eta,Xtrain,Ytrain,nruleslen,lhs_len,maxlhs,permsdic,burnin,nchains,[None]*nchains)
-        
+
     #Merge the chains
     permsdic = merge_chains(res)
-    
+
     ###The point estimate, BRL-point
     d_star = get_point_estimate(permsdic,lhs_len,Xtrain,Ytrain,alpha,nruleslen,maxlhs,lbda,eta) #get the point estimate
-    
+
     if d_star:
         #Compute the rule consequent
         theta, ci_theta = get_rule_rhs(Xtrain,Ytrain,d_star,alpha,True)
-        
+
         #Print out the point estimate rule
-        print 'antecedent risk (credible interval for risk)'
+        print('antecedent risk (credible interval for risk)')
         for i,j in enumerate(d_star):
-            print itemsets[j],theta[i],ci_theta[i]
-        
+            print(itemsets[j],theta[i],ci_theta[i])
+
         #Evaluate on the demo data
         preds_d_star = preds_d_t(Xtest,Ytest,d_star,theta) #Use d_star to make predictions on the demo data
         accur_d_star = preds_to_acc(preds_d_star,Ylabels_test)#Accuracy of the point estimate
-        print 'accuracy of point estimate',accur_d_star
-    
+        print('accuracy of point estimate',accur_d_star)
+
     ###The full posterior, BRL-post
     preds_fullpost = preds_full_posterior(Xtest,Ytest,Xtrain,Ytrain,permsdic,alpha)
     accur_fullpost = preds_to_acc(preds_fullpost,Ylabels_test) #Accuracy of the full posterior
-    print 'accuracy of full posterior',accur_fullpost
-    
+    print('accuracy of full posterior',accur_fullpost)
+
     return permsdic, d_star, itemsets, theta, ci_theta, preds_d_star, accur_d_star, preds_fullpost, accur_fullpost
 
 
@@ -173,22 +173,22 @@ def reset_permsdic(permsdic):
 
 #Run mcmc for each of the chains, IN SERIAL!
 def run_bdl_multichain_serial(numiters,thinning,alpha,lbda,eta,X,Y,nruleslen,lhs_len,maxlhs,permsdic,burnin,nchains,d_inits,verbose=True):
-    #Run each chain 
+    #Run each chain
     t1 = time.clock()
     if verbose:
-        print 'Starting mcmc chains'
+        print('Starting mcmc chains')
     res = {}
     for n in range(nchains):
         res[n] = mcmcchain(numiters,thinning,alpha,lbda,eta,X,Y,nruleslen,lhs_len,maxlhs,permsdic,burnin,nchains,d_inits[n])
-        
+
     if verbose:
-        print 'Elapsed CPU time',time.clock()-t1
+        print('Elapsed CPU time',time.clock()-t1)
 
     #Check convergence
     Rhat = gelmanrubin(res)
-    
+
     if verbose:
-        print 'Rhat for convergence:',Rhat
+        print('Rhat for convergence:',Rhat)
     ##plot?
     #plot_chains(res)
     return res,Rhat
@@ -240,7 +240,7 @@ def gelmanrubin(res):
     try:
         Rhat = sqrt(varhat/float(W))
     except RuntimeWarning:
-        print 'RuntimeWarning computing Rhat, W='+str(W)+', B='+str(B)
+        print('RuntimeWarning computing Rhat, W='+str(W)+', B='+str(B))
         Rhat = 0.
     return Rhat
 
@@ -272,11 +272,11 @@ def get_point_estimate(permsdic,lhs_len,X,Y,alpha,nruleslen,maxlhs,lbda,eta,verb
     #Now compute average
     avglistlen = average(listlens)
     if verbose:
-        print 'Posterior average length:',avglistlen
+        print('Posterior average length:',avglistlen)
     try:
         avgrulesize = average(rulesizes)
         if verbose:
-            print 'Posterior average width:',avgrulesize
+            print('Posterior average width:',avgrulesize)
         #Prepare the intervals
         minlen = int(floor(avglistlen))
         maxlen = int(ceil(avglistlen))
@@ -303,7 +303,7 @@ def get_point_estimate(permsdic,lhs_len,X,Y,alpha,nruleslen,maxlhs,lbda,eta,verb
         d_star = d_ts[likelihds.argmax()]
     except RuntimeWarning:
         #This can happen if all perms are identically [0], or if no soln is found within the len and width bounds (probably the chains didn't converge)
-        print 'No suitable point estimate found'
+        print('No suitable point estimate found')
         d_star = None
     return d_star
 
@@ -523,7 +523,7 @@ def proposal(d_t,R_t,X,Y,alpha):
         #the probability of going from d_star back to d_t is the probability of the corresponding add.
         #p(d*->d|add) = 1/((|a|-|d*|)(|d*|+1)) = 1/((|a|-|d|+1)(|d|))
         #p(d->d*|cut) = 1/|d|
-        #Jratio = 
+        #Jratio =
         Jratio = Jratios[2]*(1./float(len(d_t)-1-R_t+1))
         R_star -=1
     else:
@@ -627,7 +627,7 @@ def get_freqitemsets(fname,minsupport,maxlhs, verbose=True):
         itemsets.extend([r[0] for r in fpgrowth(data_neg,supp=minsupport,max=maxlhs)])
     itemsets = list(set(itemsets))
     if verbose:
-        print len(itemsets),'rules mined'
+        print(len(itemsets),'rules mined')
     #Now form the data-vs.-lhs set
     #X[j] is the set of data points that contain itemset j (that is, satisfy rule j)
     X = [ set() for j in range(len(itemsets)+1)]
@@ -643,7 +643,7 @@ def get_freqitemsets(fname,minsupport,maxlhs, verbose=True):
     itemsets_all = ['null']
     itemsets_all.extend(itemsets)
     return X,Y,nruleslen,lhs_len,itemsets_all
-  
+
 #Load the demo data, and determine which antecedents are satisfied by each demo observation
 def get_testdata(fname,itemsets):
     #And now the demo data.

@@ -11,18 +11,18 @@ data_feature_labels = [
 ]
 data_class1_labels = ["Iris Versicolour", "No Diabetes"]
 for i in range(len(datasets)):
-    print "--------"
-    print "DATASET: ", datasets[i], "(", dataseturls[i], ")"
+    print("--------")
+    print("DATASET: ", datasets[i], "(", dataseturls[i], ")")
     data = fetch_mldata(datasets[i])
     y = data.target
     y[y>1] = 0
     y[y<0] = 0
 
-    Xtrain, Xtest, ytrain, ytest = train_test_split(data.data, y)    
-    
+    Xtrain, Xtest, ytrain, ytest = train_test_split(data.data, y)
+
     clf = RuleListClassifier(max_iter=50000, n_chains=3, class1label=data_class1_labels[i], verbose=False)
     clf.fit(Xtrain, ytrain, feature_labels=data_feature_labels[i])
-    
-    print "accuracy:", clf.score(Xtest, ytest)
-    print "rules:\n", clf
-    print "Random Forest accuracy:", sklearn.ensemble.RandomForestClassifier().fit(Xtrain, ytrain).score(Xtest, ytest)
+
+    print("accuracy:", clf.score(Xtest, ytest))
+    print("rules:\n", clf)
+    print("Random Forest accuracy:", sklearn.ensemble.RandomForestClassifier().fit(Xtrain, ytrain).score(Xtest, ytest))
